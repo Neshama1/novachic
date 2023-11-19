@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Nova Chic
+Comment=Play music on YouTube
+TryExec=novachic
+Exec=novachic %U
+Terminal=false
+Type=Application
+GenericName=
+StartupNotify=true
+Icon=novachic
+Categories=Qt;KDE;
+MimeType=
+SingleMainWindow=true

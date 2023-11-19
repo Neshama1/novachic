@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>MainMenu.qml</file>
+        <file>Home.qml</file>
+        <file>Search.qml</file>
+        <file>Playlist.qml</file>
+        <file>More.qml</file>
+        <file>SettingsDialog.qml</file>
+        <file>../assets/this-is-america.jpg</file>
+        <file>../assets/transparent-background.png</file>
+    </qresource>
+</RCC>

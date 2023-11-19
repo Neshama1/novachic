@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component type="desktop">
+  <id>org.kde.novachic.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LGPL-3.0</project_license>
+  <name>Nova Chic</name>
+  <summary>Play music on YouTube</summary>
+  <description>
+    <p>Nova Chic is a client for YouTube</p>
+  </description>
+  <url type="homepage">https://www.novaflowos.com</url>
+  <url type="bugtracker">https://bugs.kde.org/enter_bug.cgi?product=novachic</url>
+  <url type="donation">https://www.kde.org/community/donations</url>
+  <screenshots>
+
+  </screenshots>
+  <provides>
+    <binary>novachic</binary>
+  </provides>
+  <content_rating type="oars-1.0"/>
+  <recommends>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </recommends>
+  <project_group>KDE</project_group>
+  <releases>
+
+  </releases>
+</component>

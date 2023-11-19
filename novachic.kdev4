@@ -1,0 +1,5 @@
+[Project]
+CreatedFrom=CMakeLists.txt
+Manager=KDevCMakeManager
+Name=novachic
+VersionControl=%{VERSIONCONTROLPLUGIN}
