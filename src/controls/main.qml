@@ -74,12 +74,12 @@ Maui.ApplicationWindow
             Text {
                 anchors.centerIn: parent
                 text: "Get API Key"
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            Qt.openUrlExternally("https://github.com/headsetapp/headset-electron/wiki/Get-Youtube-API-Key")
-                        }
-                    }
+            }
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    Qt.openUrlExternally("https://github.com/headsetapp/headset-electron/wiki/Get-Youtube-API-Key")
+                }
             }
             HoverHandler {
                 id: buttonGetAPIMouse
