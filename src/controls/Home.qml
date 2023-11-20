@@ -16,39 +16,6 @@ Maui.Page {
 
     showCSDControls: true
 
-    Maui.SettingsDialog
-    {
-        Maui.SectionGroup
-        {
-            title: i18n("Editor")
-            description: i18n("Configure the editor behaviour.")
-
-            Maui.SectionItem
-            {
-                label1.text:  i18n("Spell Checker")
-                label2.text: i18n("Check spelling and give suggestions.")
-                Switch
-                {
-                    checkable: true
-                    checked: settings.spellcheckEnabled
-                    onToggled: settings.spellcheckEnabled = !settings.spellcheckEnabled
-                }
-            }
-
-            Maui.SectionItem
-            {
-                label1.text:  i18n("Auto Save")
-                label2.text: i18n("Auto saves your file every few seconds")
-                Switch
-                {
-                    checkable: true
-                    checked: settings.autoSave
-                    onToggled: settings.autoSave = !settings.autoSave
-                }
-            }
-        }
-    }
-
     property int timePos
     property int duration
     property string timePosInfo

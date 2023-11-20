@@ -5,6 +5,7 @@ import QtQuick.Layouts 1.12
 import org.mauikit.controls 1.3 as Maui
 import QtGraphicalEffects 1.15
 import Qt.labs.settings 1.0
+import QtQuick.Window 2.2
 import org.kde.novachic 1.0
 
 Maui.ApplicationWindow
@@ -21,6 +22,9 @@ Maui.ApplicationWindow
     property string videoDurationInfo
     property string videoTimePosInfo
     property int menuCurrentIndex: 0
+
+    width: Screen.desktopAvailableWidth - Screen.desktopAvailableWidth * 45 / 100
+    height: Screen.desktopAvailableHeight - Screen.desktopAvailableHeight * 25 / 100
 
     // Settings
     property int maxResultsOnSearch: 50         // Search Page
