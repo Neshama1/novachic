@@ -188,25 +188,15 @@ Maui.Page {
             for(var i = 0; i < jsonData.length; i++) {
                 var obj = jsonData.data[i];
 
-                // Añade newSongsModelMax primeros elementos (más recientes) de lista Christian en caso de ser mas reciente
-                // que cada uno de los anteriormente añadidos de lista Soul
+                // Añadir
+                newSongsModel.append({"videoId": obj.videoId,"title": obj.title,"description": obj.description,"thumbnailUrl": obj.thumbnailUrl,"channelTitle": obj.channelTitle,"channelId": obj.channelId,"videoOwnerChannelTitle": obj.videoOwnerChannelTitle,"videoOwnerChannelId": obj.videoOwnerChannelId,"publishedAt": obj.publishedAt})
 
-                if (newSongsModel.count > 0) {
-                    var j
-                    for (j = 0; j < newSongsModel.count; j++) {
-                        if (obj.publishedAt > newSongsModel.get(j).publishedAt) {
-                            newSongsModel.insert(j,{"videoId": obj.videoId,"title": obj.title,"description": obj.description,"thumbnailUrl": obj.thumbnailUrl,"channelTitle": obj.channelTitle,"channelId": obj.channelId,"videoOwnerChannelTitle": obj.videoOwnerChannelTitle,"videoOwnerChannelId": obj.videoOwnerChannelId,"publishedAt": obj.publishedAt})
-                            break
-                        }
-                    }
-                    if (newSongsModel.count > newSongsModelMax) {
-                        newSongsModel.remove(newSongsModelMax)
-                    }
-                }
-                else {
-                    if (i < newSongsModelMax) {
-                        newSongsModel.append({"videoId": obj.videoId,"title": obj.title,"description": obj.description,"thumbnailUrl": obj.thumbnailUrl,"channelTitle": obj.channelTitle,"channelId": obj.channelId,"videoOwnerChannelTitle": obj.videoOwnerChannelTitle,"videoOwnerChannelId": obj.videoOwnerChannelId,"publishedAt": obj.publishedAt})
-                    }
+                // Ordenar
+                sortModel()
+
+                // Eliminar último elemento si supera el máximo establecido
+                if (newSongsModel.count > newSongsModelMax) {
+                    newSongsModel.remove(newSongsModelMax)
                 }
             }
 
@@ -229,6 +219,22 @@ Maui.Page {
         }
 
         playlistChristianParsed()
+    }
+
+    function sortModel()
+    {
+        var n;
+        var i;
+        for (n=0; n < newSongsModel.count; n++)
+        {
+            for (i=n+1; i < newSongsModel.count; i++)
+            {
+                if (newSongsModel.get(n).publishedAt < newSongsModel.get(i).publishedAt)
+                {
+                    newSongsModel.move(i, n, 1);
+                }
+            }
+        }
     }
 
     Connections {
