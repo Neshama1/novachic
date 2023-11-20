@@ -3,7 +3,6 @@ import QtQml 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import org.mauikit.controls 1.3 as Maui
-import org.kde.kirigami 2.15 as Kirigami
 import QtGraphicalEffects 1.15
 import com.blackgrain.qml.quickdownload 1.0
 import org.kde.novachic 1.0
@@ -648,8 +647,8 @@ Maui.Page {
 
         background: Maui.ShadowedRectangle {
             id: bkPlayer
-            Kirigami.Theme.inherit: false
-            Kirigami.Theme.colorSet: Kirigami.Theme.View
+            Maui.Theme.inherit: false
+            Maui.Theme.colorSet: Maui.Theme.View
             anchors.fill: parent
             color: Qt.lighter(Maui.Theme.alternateBackgroundColor,1.05)
             border.width: 2
