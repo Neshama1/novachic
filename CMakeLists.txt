@@ -31,7 +31,7 @@ include(ECMSourceVersionControl)
 include(FeatureSummary)
 
 find_package(Qt5 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core Quick Qml Widgets Sql Concurrent Network Gui DBus)
-find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS I18n CoreAddons Kirigami2 Config)
+find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS I18n CoreAddons Config)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)

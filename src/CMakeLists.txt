@@ -35,7 +35,6 @@ target_link_libraries(${PROJECT_NAME}
 
     KF5::CoreAddons
     KF5::I18n
-    KF5::Kirigami2
     KF5::ConfigGui
 
     PkgConfig::MPV
