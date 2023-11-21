@@ -102,12 +102,20 @@ Maui.Page {
                             if (stackView.currentItem.objectName != "objectPageHome") {
                                 renderer.setProperty("pause",true)
                                 rectRenderer.visible = false
-                                searchModel.clear()
                                 stackView.pop()
                                 stackViewSidePanel.pop()
                                 stackView.push("qrc:/Home.qml")
                                 stackViewSidePanel.push("qrc:/MainMenu.qml")
                                 sidePanel.width = 350
+
+                                // Evita múltiples señales idle-active provocando salto en
+                                // más de un paso en la reproducción, asegurando sólo
+                                // elemento inicial en el stackView. Anteriores pop y push
+                                // permiten sincronizar cambio de opacidad en stackView
+                                // y stackViewSidePanel, ya que se produce al efectuar cambio
+                                // de página un cambio en dicha opacidad de forma parece
+                                // automática. Animar cambio de opacidad permite transición suave.
+                                stackView.pop()
                             }
                             return
                         }

@@ -289,6 +289,7 @@ Maui.Page {
                     playingPanelCover.imageSource = newSongsModel.get(currentIndex).thumbnailUrl
                     playingPanelLabel.text = newSongsModel.get(currentIndex).title
                     bannerText.text = newSongsModel.get(currentIndex).title
+                    console.info("entra idle-active home")
                 }
             }
 
@@ -319,6 +320,7 @@ Maui.Page {
         onAccepted: {
             query = text
             renderer.setProperty("pause",true)
+            searchModel.clear()
             stackView.pop()
             stackViewSidePanel.pop()
             stackView.push("qrc:/Search.qml")

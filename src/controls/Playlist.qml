@@ -143,6 +143,7 @@ Maui.Page {
                     playingPanelLabel.text = playlistModel.get(currentIndex).title
                     bannerText.text = playlistModel.get(currentIndex).title
                     playerPanel.visible = true
+                    console.info("entra idle-active playlist")
                 }
             }
 
