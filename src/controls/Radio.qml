@@ -903,7 +903,7 @@ Maui.Page {
                     flat: true
                     icon.name: "media-skip-forward"
                     onClicked: {
-                        if (currentIndex < playlistModel.count - 1) {
+                        if (currentIndex < channelVideosModel.count - 1) {
                             currentIndex = currentIndex + 1
                             renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + channelVideosModel.get(currentIndex).videoId])
                             renderer.setProperty("pause",false)
