@@ -132,7 +132,7 @@ Maui.Page {
                 videoTimePosInfo = timePosInfo
             }
 
-            if (property == "idle-active" && data == true) {
+            if (property == "idle-active" && data == true && currentPage == "playlist") {
                 if (currentIndex < playlistModel.count - 1) {
                     currentIndex = currentIndex + 1
                     renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + playlistModel.get(currentIndex).videoId])

@@ -49,6 +49,7 @@ Maui.Page {
         playlistModel.clear()
 
         currentIndex = 0
+        currentPage = "radio"
         results.visible = false
 
         for (var i = 0; i < includedOnRadioModel.count; i++) {
@@ -244,7 +245,7 @@ Maui.Page {
                 videoTimePosInfo = timePosInfo
             }
 
-            if (property == "idle-active" && data == true) {
+            if (property == "idle-active" && data == true && currentPage == "radio") {
                 if (currentIndex < channelVideosModel.count - 1) {
                     currentIndex = currentIndex + 1
                     renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + channelVideosModel.get(currentIndex).videoId])
