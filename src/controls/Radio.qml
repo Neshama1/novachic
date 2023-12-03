@@ -245,7 +245,7 @@ Maui.Page {
             }
 
             if (property == "idle-active" && data == true) {
-                if (currentIndex < playlistModel.count - 1) {
+                if (currentIndex < channelVideosModel.count - 1) {
                     currentIndex = currentIndex + 1
                     renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + channelVideosModel.get(currentIndex).videoId])
                     playButton.icon.name = "media-playback-stop"
