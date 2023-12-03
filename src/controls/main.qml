@@ -7,6 +7,7 @@ import QtGraphicalEffects 1.15
 import Qt.labs.settings 1.0
 import QtQuick.Window 2.2
 import org.kde.novachic 1.0
+import com.blackgrain.qml.quickdownload 1.0
 
 Maui.ApplicationWindow
 {
@@ -22,6 +23,8 @@ Maui.ApplicationWindow
     property string videoDurationInfo
     property string videoTimePosInfo
     property int menuCurrentIndex: 0
+    property string idChannelNovaFlowOS: "UCqV0rOHK-_HJui8C12l2ajg"
+    property int playlistMaxResults: 50
 
     width: Screen.desktopAvailableWidth - Screen.desktopAvailableWidth * 45 / 100
     height: Screen.desktopAvailableHeight - Screen.desktopAvailableHeight * 25 / 100
@@ -29,12 +32,14 @@ Maui.ApplicationWindow
     // Settings
     property int maxResultsOnSearch: 50         // Search Page
     property int maxResultsOnNewSongs: 5        // Home Page
+    property int maxResultsPerChannel: 100     // Radio Page
     property double appOpacity: 0.90
     property string apiKeyYouTube: ""
 
     Settings {
         property alias maxResultsOnSearch: root.maxResultsOnSearch
         property alias maxResultsOnNewSongs: root.maxResultsOnNewSongs
+        property alias maxResultsPerChannel: root.maxResultsPerChannel
         property alias appOpacity: root.appOpacity
         property alias apiKeyYouTube: root.apiKeyYouTube
     }
@@ -51,6 +56,8 @@ Maui.ApplicationWindow
         if (apiKeyYouTube == "") {
             getAPIKeyDialog.open()
         }
+
+        getPlaylists()
     }
 
     Maui.InfoDialog
@@ -100,33 +107,81 @@ Maui.ApplicationWindow
         }
     }
 
-    ListModel { id: searchModel }
-    ListModel { id: playlistModel }
-    ListModel { id: channelVideosModel }
-    ListModel { id: newSongsModel }
+    ListModel { id: newSongsModel }             // Novedades en página Home
+    ListModel { id: searchModel }               // Resultados de búsqueda
+    ListModel { id: playlistModel }             // Contenido de una playlist
+    ListModel { id: channelVideosModel }        // Resultados de página radio
+    ListModel { id: includedOnRadioModel }      // Playlists seleccionadas para radio
 
-    ListModel { id: genreModel }
-
+    // Menú principal
     ListModel {
-        id: albumModel
-        ListElement { artist: "Tina Turner" ; album: "What's Love Got To Do With It" ; cover: "https://i.discogs.com/RxXcxuIT-JjRkpOnQVHwnUWg2JsRTyI9JZwWPvIWULQ/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEyNDE5/MTAtMTU1MjU3NTE1/NS0yNzMyLmpwZWc.jpeg" }
-        ListElement { artist: "Grover Washington Jr" ; album: "Inside Moves" ; cover: "https://i.discogs.com/kEK56Kwl6Mom9-Md8oX6ycsJpSqAF0ZrWdMvyxAo-iM/rs:fit/g:sm/q:90/h:597/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTQyNDE0/MjYtMTQzMjA2Mjk5/MS0yNzY1LmpwZWc.jpeg" }
-        ListElement { artist: "Larry Dunn Orchestra" ; album: "Lover's Silhouette" ; cover: "https://i.discogs.com/liEudVynZL81ADuNme-wn8iDcpbu7Y5fGbY_xH7qArA/rs:fit/g:sm/q:90/h:550/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTMxMzQ1/NDgtMTMxNzM3MDUw/OC5qcGVn.jpeg" }
+    id: mainMenuModel
+        ListElement { name: "Home" ; description: "Home" ; icon: "go-home" ; playlistIndex: -1 }
+        ListElement { name: "Radio" ; description: "Radio" ; icon: "radio" ; playlistIndex: -1 }
     }
 
-    ListModel {
-        id: genresModel
-        ListElement { genre: "80s" ; colour: "#8400E7" ; cover: "" }
-        ListElement { genre: "90s" ; colour: "#FF8201" ; cover: "" }
-        ListElement { genre: "Pop" ; colour: "#E13300" ; cover: "" }
-        ListElement { genre: "Christian" ; colour: "#1E3264" ; cover: "" }
-        ListElement { genre: "Soul" ; colour: "#E8125C" ; cover: "" }
-        ListElement { genre: "Funky" ; colour: "#158A08" ; cover: "" }
-        ListElement { genre: "Smooth Jazz" ; colour: "#0C73EC" ; cover: "" }
-        ListElement { genre: "World Music" ; colour: "#E1118B" ; cover: "" }
-        ListElement { genre: "Reggae" ; colour: "#158A08" ; cover: "" }
-        ListElement { genre: "African" ; colour: "#7358FF" ; cover: "" }
-        ListElement { genre: "New Age" ; colour: "#E1118B" ; cover: "" }
+    ListModel { id: novaFlowOSPlaylists }       // Playlists de Nova Flow OS
+
+    ListModel { id: channelPlaylistsModel }     // Contiene las listas de reproducción de un canal de YouTube
+    ListModel { id: playlistsModel }            // Todas las playlists
+    ListModel { id: channelsListModel }         // Todos los canales de página radio
+
+    function getPlaylists() {
+        jsonData.deleteData("/tmp/channelplaylists.json")
+        download.destination = "file:///tmp/channelplaylists.json"
+        download.url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet&channelId=" + idChannelNovaFlowOS + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
+        download.running = true
+    }
+
+    JsonData {
+        id: jsonData
+    }
+
+    Download {
+        id: download
+
+        running: false
+
+        followRedirects: true
+        onRedirected: console.log('Redirected',url,'->',redirectUrl)
+
+        onStarted: console.log('Started download',url)
+        onError: console.error(errorString)
+        onProgressChanged: console.log(url,'progress:',progress)
+        onFinished: {
+            console.info(url,'done')
+            running = false
+            parseChannelPlaylists()
+        }
+    }
+
+    function parseChannelPlaylists() {
+        jsonData.parse(download.destination);
+        if(jsonData.result) {
+
+            for(var i = 0; i < jsonData.length; i++) {
+                var obj = jsonData.data[i];
+                channelPlaylistsModel.append({"playlistId": obj.playlistId,"title": obj.title,"description": obj.description,"thumbnailUrl": obj.thumbnailUrl,"channelTitle": obj.channelTitle,"channelId": obj.channelId})
+            }
+        }
+        else
+        {
+            console.warn("Any data has not found by enable status!")
+        }
+        fillMainMenu()
+        addPlaylists()
+    }
+
+    function fillMainMenu() {
+        for(var i = 0 ; i < channelPlaylistsModel.count ; i++) {
+            mainMenuModel.append({name: channelPlaylistsModel.get(i).title, description: channelPlaylistsModel.get(i).description, icon: "draw-circle", playlistIndex: i})
+        }
+    }
+
+    function addPlaylists() {
+        for(var i = 0 ; i < channelPlaylistsModel.count; i++) {
+            playlistsModel.append({"playlistId": channelPlaylistsModel.get(i).playlistId,"title": channelPlaylistsModel.get(i).title,"description": channelPlaylistsModel.get(i).description,"thumbnailUrl": channelPlaylistsModel.get(i).thumbnailUrl,"channelTitle": channelPlaylistsModel.get(i).channelTitle,"channelId": channelPlaylistsModel.get(i).channelId})
+        }
     }
 
     Maui.Page {

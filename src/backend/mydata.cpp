@@ -387,6 +387,79 @@ void MyData::parse(QString path) {
         qWarning() << "There is no any file in this path!";
       }
   }
+  else if (path == "/tmp/channelplaylists.json")
+  {
+    QString rawData;
+    QVariantMap modelData;
+    QVariantList finalJson;
+
+    QFile file;
+    QDir dir(".");
+
+    if(fileExists(path)) {
+        {
+          file.setFileName(path);
+          file.open(QIODevice::ReadOnly | QIODevice::Text);
+
+          //Load data from json file!
+          rawData = file.readAll();
+
+          file.close();
+
+          // Create json document.
+          // Parses json as a UTF-8 encoded JSON document, and creates a QJsonDocument from it.
+
+          QJsonDocument document   =   { QJsonDocument::fromJson(rawData.toUtf8()) };
+
+          //Create data as Json object
+          QJsonObject jsonObject = document.object();
+
+          // Sets number of items in the list as integer.
+          setLength(jsonObject["items"].toArray().count());
+
+          foreach (const QJsonValue &value, jsonObject["items"].toArray()) {
+
+              // Sets value from model as Json object
+              QJsonObject modelObject = value.toObject();
+
+              // Snippet
+              QJsonValue snippetValue = modelObject.value(QString("snippet"));
+              QJsonObject snippetObject = snippetValue.toObject();
+
+              // Thumbnails
+              QJsonValue thumbnailsValue = snippetObject.value(QString("thumbnails"));
+              QJsonObject thumbnailsObject = thumbnailsValue.toObject();
+
+              // Default thumbnail
+              QJsonValue defaulThumbnailValue = thumbnailsObject.value(QString("default"));
+              QJsonObject defaulThumbnailObject = defaulThumbnailValue.toObject();
+
+              // Channel title
+              QJsonValue channelTitleValue = modelObject.value(QString("channelTitle"));
+              QJsonObject channelTitleObject = channelTitleValue.toObject();
+
+              modelData.insert("playlistId", modelObject["id"].toString());
+              modelData.insert("title", snippetObject["title"].toString());
+              modelData.insert("description", snippetObject["description"].toString());
+              modelData.insert("thumbnailUrl", defaulThumbnailObject["url"].toString());
+              modelData.insert("channelTitle", snippetObject["channelTitle"].toString());
+              modelData.insert("channelId", snippetObject["channelId"].toString());
+
+              // Set model data
+              finalJson.append(modelData);
+            }
+
+          // Sets data
+          setData(finalJson);
+
+          // Sets result by status object of model.
+          setResult("true");
+        }
+
+      } else {
+        qWarning() << "There is no any file in this path!";
+      }
+  }
 }
 
 void MyData::deleteData(QString file)

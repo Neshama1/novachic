@@ -79,6 +79,21 @@ Maui.SettingsDialog
                 }
             }
         }
+
+        Maui.SectionItem
+        {
+            label1.text:  i18n("Max results per channel")
+            label2.text: i18n("Configure radio page")
+            SpinBox {
+                from: 1
+                to: 100000
+                value: maxResultsPerChannel
+
+                onValueModified: {
+                    maxResultsPerChannel = value
+                }
+            }
+        }
     }
 
     Maui.SectionGroup

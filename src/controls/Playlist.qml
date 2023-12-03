@@ -19,7 +19,6 @@ Maui.Page {
     property string timePosInfo
     property string durationInfo
     property string nextPageToken
-    property int playlistMaxResults: 50
     property bool visibleLabelTime: false
 
     Component.onCompleted: {

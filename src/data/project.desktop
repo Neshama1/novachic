@@ -8,6 +8,6 @@ Type=Application
 GenericName=
 StartupNotify=true
 Icon=novachic
-Categories=Qt;KDE;
+Categories=AudioVideo
 MimeType=
 SingleMainWindow=true

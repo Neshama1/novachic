@@ -8,90 +8,67 @@ import com.blackgrain.qml.quickdownload 1.0
 import org.kde.novachic 1.0
 
 Maui.Page {
-
-    id: home
-
-    objectName: "objectPageHome"
+    id: radioPage
 
     showCSDControls: true
+
+    property string nextPageToken
+    property string uploadsPlaylist
+    property int playlistIndex: 0
+    property int channelIndex: 0
+    property int resultsPerChannel: 0
 
     property int timePos
     property int duration
     property string timePosInfo
     property string durationInfo
-    property string nextPageToken: ""
-    property int playlistMaxResults: 50
-    property bool endOfPlaylist: false
-    property int newSongsModelMax: maxResultsOnNewSongs
     property bool visibleLabelTime: false
-    property int currentPlaylist: 0
 
-    property string playlistIdSoul: "PLJREw8UDEE5Vl9mdKuozsriWEcx2NvPeU"
-    property string playlistIdChristian: "PLJREw8UDEE5W3u14n5rof7_ibdiS2q5DY"
+    signal maxResultsParsed()
+    signal maxResultsOnChannelParsed()
 
-    signal playlistParsed()
+    objectName: "objectPageRadio"
+
+    headBar.background: Rectangle {
+        anchors.fill: parent
+        color: Maui.Theme.backgroundColor
+        opacity: 0
+    }
+
+    background: Rectangle {
+        anchors.fill: parent
+        Maui.Theme.inherit: false
+        Maui.Theme.colorSet: Maui.Theme.Window
+        color: Maui.Theme.backgroundColor
+        opacity: appOpacity
+    }
 
     Component.onCompleted: {
-        renderer.setProperty("pause",true)
-        newSongsModel.clear()
-        getPlaylistsNovaFlowOS()
+        channelsListModel.clear()
+        channelVideosModel.clear()
+        playlistModel.clear()
+
         currentIndex = 0
-        currentPage = "home"
-    }
+        results.visible = false
 
-    function getPlaylistsNovaFlowOS() {
-        jsonData.deleteData("/tmp/channelplaylists.json")
-        downloadPlaylistsNovaFlowOS.destination = "file:///tmp/channelplaylists.json"
-        downloadPlaylistsNovaFlowOS.url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet&channelId=" + idChannelNovaFlowOS + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
-        downloadPlaylistsNovaFlowOS.running = true
-    }
-
-    Download {
-        id: downloadPlaylistsNovaFlowOS
-
-        running: false
-
-        followRedirects: true
-        onRedirected: console.log('Redirected',url,'->',redirectUrl)
-
-        onStarted: console.log('Started download',url)
-        onError: console.error(errorString)
-        onProgressChanged: console.log(url,'progress:',progress)
-        onFinished: {
-            console.info(url,'done')
-            running = false
-            parsePlaylistsNovaFlowOS()
-        }
-    }
-
-    function parsePlaylistsNovaFlowOS() {
-        jsonData.parse(downloadPlaylistsNovaFlowOS.destination);
-        if(jsonData.result) {
-
-            for(var i = 0; i < jsonData.length; i++) {
-                var obj = jsonData.data[i];
-                novaFlowOSPlaylists.append({"playlistId": obj.playlistId,"title": obj.title,"description": obj.description,"thumbnailUrl": obj.thumbnailUrl,"channelTitle": obj.channelTitle,"channelId": obj.channelId})
+        for (var i = 0; i < includedOnRadioModel.count; i++) {
+            if (includedOnRadioModel.get(i).included) {
+                playlistIndex = i
+                getSongList(playlistIndex)
+                break;
             }
         }
-        else
-        {
-            console.warn("Any data has not found by enable status!")
-        }
-
-        getPlaylists()
     }
 
-    function getPlaylists() {
+    function getSongList(playlistIndex) {
         jsonData.deleteData("/tmp/playlist.json")
         download.destination = "file:///tmp/playlist.json"
-
-        if (nextPageToken == "") {
-            download.url = "https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=" + novaFlowOSPlaylists.get(currentPlaylist).playlistId + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
-        }
-        else {
-            download.url = "https://youtube.googleapis.com/youtube/v3/playlistItems?pageToken=" + nextPageToken + "&part=snippet&playlistId=" + novaFlowOSPlaylists.get(currentPlaylist).playlistId + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
-        }
+        download.url = "https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=" + playlistsModel.get(playlistIndex).playlistId + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
         download.running = true
+    }
+
+    JsonData {
+        id: jsonData
     }
 
     Download {
@@ -108,84 +85,119 @@ Maui.Page {
         onFinished: {
             console.info(url,'done')
             running = false
-            parsePlaylist()
+            parse()
         }
     }
 
-    function parsePlaylist() {
+    function parse() {
         jsonData.parse(download.destination);
-        if(jsonData.result) {
+        if (jsonData.result) {
             for(var i = 0; i < jsonData.length; i++) {
                 var obj = jsonData.data[i];
 
-                // Añadir
-                newSongsModel.append({"videoId": obj.videoId,"title": obj.title,"description": obj.description,"thumbnailUrl": obj.thumbnailUrl,"channelTitle": obj.channelTitle,"channelId": obj.channelId,"videoOwnerChannelTitle": obj.videoOwnerChannelTitle,"videoOwnerChannelId": obj.videoOwnerChannelId,"publishedAt": obj.publishedAt})
-
-                // Ordenar
-                sortModel()
-
-                // Eliminar último elemento si supera el máximo establecido
-                if (newSongsModel.count > newSongsModelMax) {
-                    newSongsModel.remove(newSongsModelMax)
-                }
+                playlistModel.append({"videoId": obj.videoId,"title": obj.title,"description": obj.description,"thumbnailUrl": obj.thumbnailUrl,"channelTitle": obj.channelTitle,"channelId": obj.channelId,"videoOwnerChannelTitle": obj.videoOwnerChannelTitle,"videoOwnerChannelId": obj.videoOwnerChannelId})
             }
 
             nextPageToken = jsonData.nextPageToken
-            bannerText.text = newSongsModel.get(0).title
-            var channel = newSongsModel.get(0).videoOwnerChannelTitle
-            buttonMore.text = channel.substr(0, 3) + "..."
 
         }
-        else
-        {
+        else {
             console.warn("Any data has not found by enable status!")
         }
-
-        if (nextPageToken == "") {
-            endOfPlaylist = true
-        }
-
-        playlistParsed()
+        maxResultsParsed()
     }
 
-    function sortModel()
-    {
-        var n;
-        var i;
-        for (n=0; n < newSongsModel.count; n++)
-        {
-            for (i=n+1; i < newSongsModel.count; i++)
-            {
-                if (newSongsModel.get(n).publishedAt < newSongsModel.get(i).publishedAt)
-                {
-                    newSongsModel.move(i, n, 1);
+    Connections {
+        target: radioPage
+        onMaxResultsParsed: {
+            if (playlistIndex < playlistsModel.count && nextPageToken != "") {
+                jsonData.deleteData("/tmp/playlist.json")
+                download.destination = "file:///tmp/playlist.json"
+                download.url = "https://youtube.googleapis.com/youtube/v3/playlistItems?pageToken=" + nextPageToken + "&part=snippet&playlistId=" + playlistsModel.get(playlistIndex).playlistId + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
+                download.running = true
+            }
+            else if (playlistIndex < playlistsModel.count && nextPageToken == "") {
+                playlistIndex = playlistIndex + 1
+
+                if (playlistIndex < playlistsModel.count) {
+                    if (includedOnRadioModel.get(playlistIndex).included) {
+                        delayGetPlaylist.start()
+                    }
+                    else {
+                        maxResultsParsed()
+                    }
+                }
+                else {
+
+                    // Playlists han sido obtenidas, obtener listado de canales sin repetir los mismos
+
+                    for (var i = 0; i < playlistModel.count; i++ ) {
+                        var exists = false;
+                        for (var j = 0; j < channelsListModel.count; j++) {
+                            if (playlistModel.get(i).videoOwnerChannelId == channelsListModel.get(j).videoOwnerChannelId) {
+                                exists = true;
+                            }
+                        }
+                        if (exists == false) {
+                            channelsListModel.append({"videoOwnerChannelTitle": playlistModel.get(i).videoOwnerChannelTitle,"videoOwnerChannelId": playlistModel.get(i).videoOwnerChannelId})
+                        }
+                    }
+
+                    // Imprimir lista de canales
+                    for (var i = 0; i < channelsListModel.count; i++ ) {
+                        console.info("Channels list for radio: " + channelsListModel.get(i).videoOwnerChannelTitle)
+                    }
+
+                    // Obtener canciones de cada canal
+                    if (channelsListModel.count > 0) {
+                        jsonData.deleteData("/tmp/channelinfo.json")
+                        downloadChannelInfo.destination = "file:///tmp/channelinfo.json"
+                        downloadChannelInfo.url = "https://www.googleapis.com/youtube/v3/channels?id=" + channelsListModel.get(0).videoOwnerChannelId + "&key=" + apiKeyYouTube + "&part=snippet,contentDetails,statistics"
+                        downloadChannelInfo.running = true
+                    }
                 }
             }
         }
     }
 
     Connections {
-        target: home
-        onPlaylistParsed: {
-            if (endOfPlaylist == false) {
-                delayGetPlaylist.start()
+        target: radioPage
+        onMaxResultsOnChannelParsed: {
+            if (channelIndex < channelsListModel.count && nextPageToken != "" && resultsPerChannel < maxResultsPerChannel) {
+                delayGetChannelSongs.start()
             }
-            else {
-                currentPlaylist = currentPlaylist + 1
+            else if (channelIndex < channelsListModel.count && (nextPageToken == "" || resultsPerChannel >= maxResultsPerChannel)) {
+                channelIndex = channelIndex + 1
 
-                if (currentPlaylist < novaFlowOSPlaylists.count) {
-                    endOfPlaylist = false
-                    delayGetPlaylist.start()
+                if (channelIndex < channelsListModel.count) {
+                    jsonData.deleteData("/tmp/channelinfo.json")
+                    downloadChannelInfo.destination = "file:///tmp/channelinfo.json"
+                    downloadChannelInfo.url = "https://www.googleapis.com/youtube/v3/channels?id=" + channelsListModel.get(channelIndex).videoOwnerChannelId + "&key=" + apiKeyYouTube + "&part=snippet,contentDetails,statistics"
+                    downloadChannelInfo.running = true
+                }
+                else {
+
+                    // Imprimir lista de canciones
+                    for (var i = 0; i < channelVideosModel.count; i++ ) {
+                        console.info(channelVideosModel.get(i).channelTitle + " " + channelVideosModel.get(i).title)
+                    }
+
+                    randomize()
+
+                    busyIndicator.visible = false
+                    labelBusyIndicator.visible = false
+                    results.visible = true
                 }
             }
         }
     }
 
-    Timer {
-        id: delayGetPlaylist
-        interval: 50; running: false; repeat: false
-        onTriggered: {
-            getPlaylists()
+    function randomize() {
+        for (var i = 0; i < channelVideosModel.count; i++) {
+            var newPos1 = Math.floor(Math.random() * (channelVideosModel.count - 1))
+            var newPos2 = Math.floor(Math.random() * (channelVideosModel.count - 1))
+            channelVideosModel.move(0,newPos1,1)
+            channelVideosModel.move(channelVideosModel.count - 1,newPos2,1)
         }
     }
 
@@ -232,15 +244,16 @@ Maui.Page {
                 videoTimePosInfo = timePosInfo
             }
 
-            if (property == "idle-active" && data == true && currentPage == "home") {
-                if (currentIndex < newSongsModel.count - 1) {
+            if (property == "idle-active" && data == true) {
+                if (currentIndex < playlistModel.count - 1) {
                     currentIndex = currentIndex + 1
-                    renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + newSongsModel.get(currentIndex).videoId])
+                    renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + channelVideosModel.get(currentIndex).videoId])
                     playButton.icon.name = "media-playback-stop"
                     videoPlayButton.icon.name = "media-playback-stop"
-                    playingPanelCover.imageSource = newSongsModel.get(currentIndex).thumbnailUrl
-                    playingPanelLabel.text = newSongsModel.get(currentIndex).title
-                    bannerText.text = newSongsModel.get(currentIndex).title
+                    playingPanelCover.imageSource = channelVideosModel.get(currentIndex).thumbnailUrl
+                    playingPanelLabel.text = channelVideosModel.get(currentIndex).title
+                    bannerText.text = channelVideosModel.get(currentIndex).title
+                    playerPanel.visible = true
                 }
             }
 
@@ -257,46 +270,122 @@ Maui.Page {
         }
     }
 
-    headBar.background: Rectangle {
-        anchors.fill: parent
-        color: Maui.Theme.backgroundColor
-        opacity: 0
-    }
-
-    headBar.middleContent: Maui.SearchField
-    {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.minimumWidth: 350
-        opacity: 0.65
-        onAccepted: {
-            query = text
-            renderer.setProperty("pause",true)
-            searchModel.clear()
-            stackView.pop()
-            stackViewSidePanel.pop()
-            stackView.push("qrc:/Search.qml")
-            stackViewSidePanel.push("qrc:/MainMenu.qml")
+    Timer {
+        id: delayGetPlaylist
+        interval: 50; running: false; repeat: false
+        onTriggered: {
+            jsonData.deleteData("/tmp/playlist.json")
+            download.destination = "file:///tmp/playlist.json"
+            download.url = "https://youtube.googleapis.com/youtube/v3/playlistItems?pageToken=" + nextPageToken + "&part=snippet&playlistId=" + playlistsModel.get(playlistIndex).playlistId + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
+            download.running = true
         }
     }
 
-    background: Rectangle {
-        anchors.fill: parent
-        Maui.Theme.inherit: false
-        Maui.Theme.colorSet: Maui.Theme.Window
-        color: Maui.Theme.backgroundColor
-        opacity: appOpacity
+    Timer {
+        id: delayGetChannelSongs
+        interval: 50; running: false; repeat: false
+        onTriggered: {
+            jsonData.deleteData("/tmp/channeluploads.json")
+            downloadChannelUploads.destination = "file:///tmp/channeluploads.json"
+            downloadChannelUploads.url = "https://youtube.googleapis.com/youtube/v3/playlistItems?pageToken=" + nextPageToken + "&part=snippet&playlistId=" + uploadsPlaylist + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
+            downloadChannelUploads.running = true
+        }
     }
 
-    // HOME RECTANGLE
+    Download {
+        id: downloadChannelInfo
+
+        running: false
+
+        followRedirects: true
+        onRedirected: console.log('Redirected',url,'->',redirectUrl)
+
+        onStarted: console.log('Started download',url)
+        onError: console.error(errorString)
+        onProgressChanged: console.log(url,'progress:',progress)
+        onFinished: {
+            console.info(url,'done')
+            running = false
+            parseChannelInfo()
+        }
+    }
+
+    function parseChannelInfo() {
+        jsonData.parse(downloadChannelInfo.destination);
+        if(jsonData.result) {
+            var obj = jsonData.data[0];
+            uploadsPlaylist = obj.uploads
+            resultsPerChannel = 0
+            getUploads()
+        }
+        else {
+            console.warn("Any data has not found by enable status!")
+        }
+    }
+
+    function getUploads() {
+        jsonData.deleteData("/tmp/channeluploads.json")
+        downloadChannelUploads.destination = "file:///tmp/channeluploads.json"
+        downloadChannelUploads.url = "https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=" + uploadsPlaylist + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
+        downloadChannelUploads.running = true
+    }
+
+    Download {
+        id: downloadChannelUploads
+
+        running: false
+
+        followRedirects: true
+        onRedirected: console.log('Redirected',url,'->',redirectUrl)
+
+        onStarted: console.log('Started download',url)
+        onError: console.error(errorString)
+        onProgressChanged: console.log(url,'progress:',progress)
+        onFinished: {
+            console.info(url,'done')
+            running = false
+            parseChannelUploads()
+        }
+    }
+
+    function parseChannelUploads() {
+        jsonData.parse(downloadChannelUploads.destination);
+        if(jsonData.result) {
+            for(var i = 0; i < jsonData.length; i++) {
+                var obj = jsonData.data[i];
+                channelVideosModel.append({"videoId": obj.videoId,"title": obj.title,"description": obj.description,"thumbnailUrl": obj.thumbnailUrl,"channelTitle": obj.channelTitle,"channelId": obj.channelId})
+
+                resultsPerChannel = resultsPerChannel + 1
+                if (resultsPerChannel >= maxResultsPerChannel) {
+                    break
+                }
+            }
+
+            nextPageToken = jsonData.nextPageToken
+        }
+        else {
+            console.warn("Any data has not found by enable status!")
+        }
+
+        var countVideos = channelVideosModel.count
+        var countChannels = channelsListModel.count
+        var index = channelIndex + 1
+        labelBusyIndicator.text = countVideos.toString() + " items (" + index.toString() + "/" + countChannels.toString() + ")"
+
+        maxResultsOnChannelParsed()
+    }
+
+    // RADIO OPTIONS RECTANGLE
 
     Maui.ShadowedRectangle {
-        id: homeRect
+        id: viewRect
         anchors.fill: parent
         anchors.leftMargin: 6
         corners.topLeftRadius: 7
         Maui.Theme.inherit: false
         Maui.Theme.colorSet: Maui.Theme.View
-        color: Maui.Theme.backgroundColor
+        color: Maui.ColorUtils.brightnessForColor(Maui.Theme.backgroundColor) == Maui.ColorUtils.Light ? Maui.Theme.backgroundColor : Qt.lighter(Maui.Theme.backgroundColor,1.65)
+        clip: false
 
         border.width: 0
         border.color: Qt.lighter("#dadada",1.08)
@@ -305,9 +394,11 @@ Maui.Page {
         shadow.xOffset: -1
         shadow.yOffset: 0
 
+        // BANNER GRADIENT
+
         OpacityMask {
             source: maskBanner
-            maskSource: homeRect
+            maskSource: viewRect
         }
 
         LinearGradient {
@@ -315,14 +406,16 @@ Maui.Page {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            height: 400
+            height: banner.height + 100
             z: 1
             gradient: Gradient {
-                GradientStop { position: 0.60; color: "transparent"}
-                GradientStop { position: 0.75; color: Maui.ColorUtils.brightnessForColor(Maui.Theme.backgroundColor) == Maui.ColorUtils.Light ? Maui.Theme.backgroundColor : Qt.lighter(Maui.Theme.backgroundColor,1.3) }
-                GradientStop { position: 0.88; color: "transparent" }
+                GradientStop { position: 0.45; color: "transparent"}
+                GradientStop { position: 0.60; color: Maui.ColorUtils.brightnessForColor(Maui.Theme.backgroundColor) == Maui.ColorUtils.Light ? Maui.Theme.backgroundColor : Qt.lighter(Maui.Theme.backgroundColor,1.65) }
+                GradientStop { position: 0.73; color: "transparent" }
             }
         }
+
+        // PLAYER GRADIENT
 
         OpacityMask {
             source: mask
@@ -333,10 +426,9 @@ Maui.Page {
             id: mask
             anchors.fill: parent
             z: 1
-            visible: false
             gradient: Gradient {
-                GradientStop { position: 0.75; color: "transparent"}
-                GradientStop { position: 0.85; color: Maui.ColorUtils.brightnessForColor(Maui.Theme.backgroundColor) == Maui.ColorUtils.Light ? Maui.Theme.backgroundColor : Qt.lighter(Maui.Theme.backgroundColor,1.65) }
+                GradientStop { position: 0.70; color: "transparent"}
+                GradientStop { position: 0.80; color: Maui.ColorUtils.brightnessForColor(Maui.Theme.backgroundColor) == Maui.ColorUtils.Light ? Maui.Theme.backgroundColor : Qt.lighter(Maui.Theme.backgroundColor,1.65) }
             }
         }
 
@@ -346,14 +438,14 @@ Maui.Page {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            height: 300
+            height: 150
             fillMode: Image.PreserveAspectCrop
 
             property bool adapt: true
 
-            opacity: 0.15
+            opacity: 0.07
 
-            source: "qrc:/assets/this-is-america.jpg"
+            source: "qrc:/assets/radio-options-anthony-roberts-82wJ10pX1Fw-unsplash.jpg"
 
             layer.enabled: true
             layer.effect: OpacityMask {
@@ -379,7 +471,7 @@ Maui.Page {
             anchors.rightMargin: 20
             anchors.bottomMargin: 40
 
-            text: "This is America"
+            text: "Radio"
 
             font.pixelSize: 26
         }
@@ -387,7 +479,7 @@ Maui.Page {
         Rectangle {
             id: rectList
             anchors.fill: parent
-            anchors.topMargin: 310
+            anchors.topMargin: 150
             color: "transparent"
             clip: true
 
@@ -398,7 +490,7 @@ Maui.Page {
 
                 spacing: 10
 
-                model: newSongsModel
+                model: channelVideosModel
                 delegate: Maui.ShadowedRectangle {
                     id: card
                     width: parent.width
@@ -442,7 +534,7 @@ Maui.Page {
                                 anchors.margins: 5
                                 font.pixelSize: 10
                                 elide: Text.ElideRight
-                                text: videoOwnerChannelTitle
+                                text: channelTitle
                             }
                         }
                         Rectangle {
@@ -489,14 +581,12 @@ Maui.Page {
                                 renderer.setProperty("pause",false)
                                 renderer.setProperty("time-pos", 0)
                                 playButton.icon.name = "media-playback-stop"
+                                videoPlayButton.icon.name = "media-playback-stop"
                                 playingPanelCover.imageSource = thumbnailUrl
                                 playingPanelLabel.text = title
-                                var channel = videoOwnerChannelTitle
-                                buttonMore.text = channel.substr(0, 3) + "..."
                                 bannerText.text = title
                                 playerPanel.visible = true
                                 playingPanel.visible = true
-                                playerPanelOpacityAnimation.start()
                             }
                             if (mouse.button == Qt.RightButton)
                             {
@@ -506,6 +596,20 @@ Maui.Page {
                 }
             }
         }
+    }
+
+    BusyIndicator {
+        id: busyIndicator
+        anchors.centerIn: parent
+        running: true
+        visible: true
+    }
+
+    Label {
+        id: labelBusyIndicator
+        anchors.horizontalCenter: busyIndicator.horizontalCenter
+        anchors.top: busyIndicator.bottom
+        font.pixelSize: 11
     }
 
     // PLAYING
@@ -531,8 +635,8 @@ Maui.Page {
         Behavior on width {
             NumberAnimation {
                 duration: 2000
-                easing.type: Easing.OutExpo		// Comprobar diferencia en animación tanto con la curva
-            }					// OutExpo como sin dicha curva de animación
+                easing.type: Easing.OutExpo
+            }
         }
 
         Behavior on height {
@@ -656,113 +760,11 @@ Maui.Page {
 		}
     }
 
-    // BUTTON +
-
-    Maui.ShadowedRectangle {
-        id: rectMore
-        anchors.right: parent.right
-        anchors.bottom: playerPanel.visible ? playerPanel.top : parent.bottom
-        anchors.margins: 20
-        width: 80
-        height: 40
-        color: Qt.lighter(Maui.Theme.alternateBackgroundColor,1.05)
-        border.width: 0
-        border.color: Qt.lighter("#dadada",1.08)
-        shadow.size: 10
-        shadow.color: Maui.ColorUtils.brightnessForColor(Maui.Theme.backgroundColor) == Maui.ColorUtils.Light ? Qt.darker("#dadada",1.0) : "#2c2c2c"
-        shadow.xOffset: 0
-        shadow.yOffset: 0
-        radius: 4
-        opacity: 0
-
-        Component.onCompleted: {
-            rectMoreOpacityAnimation.start()
-        }
-
-        PropertyAnimation {
-            id: rectMoreOpacityAnimation
-            target: rectMore
-            properties: "opacity"
-            from: 0
-            to: 1.0
-            duration: 1000
-            easing.type: Easing.Linear
-        }
-
-        Button {
-            id: buttonMore
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.margins: 5
-            flat: true
-            icon.name: "list-add"
-            onClicked: {
-                channelVideosModel.clear()
-                renderer.setProperty("pause",true)
-                stackViewSidePanel.pop()
-                stackView.push("qrc:/More.qml")
-                stackViewSidePanel.push("qrc:/MainMenu.qml")
-            }
-        }
-    }
-
-    // BUTTON NEXT PAGE
-
-    Maui.ShadowedRectangle {
-        id: buttonNextPage
-        anchors.right: parent.right
-        anchors.bottom: playerPanel.visible ? playerPanel.top : parent.bottom
-        anchors.margins: 20
-        width: 80
-        height: 40
-        color: Qt.lighter(Maui.Theme.alternateBackgroundColor,1.05)
-        border.width: 0
-        border.color: Qt.lighter("#dadada",1.08)
-        shadow.size: 10
-        shadow.color: Maui.ColorUtils.brightnessForColor(Maui.Theme.backgroundColor) == Maui.ColorUtils.Light ? Qt.darker("#dadada",1.0) : "#2c2c2c"
-        shadow.xOffset: 0
-        shadow.yOffset: 0
-        radius: 4
-        opacity: 0
-        visible: false
-
-        Component.onCompleted: {
-            buttonNextPageOpacityAnimation.start()
-        }
-
-        PropertyAnimation {
-            id: buttonNextPageOpacityAnimation
-            target: buttonNextPage
-            properties: "opacity"
-            from: 0
-            to: 1.0
-            duration: 1000
-            easing.type: Easing.Linear
-        }
-
-        Button {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.margins: 5
-            flat: true
-            icon.name: "go-next"
-            text: "Next"
-            onClicked: {
-                if (nextPageToken != "") {
-                    jsonData.deleteData("/tmp/playlist.json")
-                    download.destination = "file:///tmp/playlist.json"
-                    download.url = "https://youtube.googleapis.com/youtube/v3/playlistItems?pageToken=" + nextPageToken + "&part=snippet&playlistId=" + playlistId + "&maxResults=" + playlistMaxResults + "&key=" + apiKeyYouTube
-                    download.running = true
-                }
-            }
-        }
-    }
-
     // PLAYER
 
     Maui.Page {
         id: playerPanel
-        visible: false
+        visible: true
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -770,8 +772,6 @@ Maui.Page {
         anchors.rightMargin: 20
         anchors.bottomMargin: 20
         height: playerMouse.hovered ? 100 : 50
-        z: 1
-        opacity: 0
 
         headBar.visible: false
 
@@ -830,17 +830,13 @@ Maui.Page {
                     onClicked: {
                         if (currentIndex > 0) {
                             currentIndex = currentIndex - 1
-                            renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + newSongsModel.get(currentIndex).videoId])
+                            renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + channelVideosModel.get(currentIndex).videoId])
                             renderer.setProperty("pause",false)
                             renderer.setProperty("time-pos", 0)
                             playButton.icon.name = "media-playback-stop"
-                            videoPlayButton.icon.name = "media-playback-stop"
-                            playingPanelCover.imageSource = newSongsModel.get(currentIndex).thumbnailUrl
-                            playingPanelLabel.text = newSongsModel.get(currentIndex).title
-                            var channel = newSongsModel.get(currentIndex).videoOwnerChannelTitle
-                            buttonMore.text = channel.substr(0, 3) + "..."
-                            bannerText.text = newSongsModel.get(currentIndex).title
-                            playerPanelOpacityAnimation.start()
+                            playingPanelCover.imageSource = channelVideosModel.get(currentIndex).thumbnailUrl
+                            playingPanelLabel.text = channelVideosModel.get(currentIndex).title
+                            bannerText.text = channelVideosModel.get(currentIndex).title
                         }
                     }
                 }
@@ -907,18 +903,15 @@ Maui.Page {
                     flat: true
                     icon.name: "media-skip-forward"
                     onClicked: {
-                        if (currentIndex < newSongsModel.count - 1) {
+                        if (currentIndex < playlistModel.count - 1) {
                             currentIndex = currentIndex + 1
-                            renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + newSongsModel.get(currentIndex).videoId])
+                            renderer.command(["loadfile", "https://www.youtube.com/watch?v=" + channelVideosModel.get(currentIndex).videoId])
                             renderer.setProperty("pause",false)
                             renderer.setProperty("time-pos", 0)
                             playButton.icon.name = "media-playback-stop"
-                            playingPanelCover.imageSource = newSongsModel.get(currentIndex).thumbnailUrl
-                            playingPanelLabel.text = newSongsModel.get(currentIndex).title
-                            var channel = newSongsModel.get(currentIndex).videoOwnerChannelTitle
-                            buttonMore.text = channel.substr(0, 3) + "..."
-                            bannerText.text = newSongsModel.get(currentIndex).title
-                            playerPanelOpacityAnimation.start()
+                            playingPanelCover.imageSource = channelVideosModel.get(currentIndex).thumbnailUrl
+                            playingPanelLabel.text = channelVideosModel.get(currentIndex).title
+                            bannerText.text = channelVideosModel.get(currentIndex).title
                         }
                     }
                 }
@@ -962,38 +955,4 @@ Maui.Page {
             id: playerMouse
         }
     }
-
-    /*
-    // PLAYER
-
-    Maui.Page {
-        id: playerPanel
-        visible: false
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.leftMargin: 25
-        anchors.rightMargin: 20
-        anchors.bottomMargin: 20
-        height: 100
-
-        headBar.visible: false
-
-        background: Maui.ShadowedRectangle {
-            id: bkPlayer
-            Maui.Theme.inherit: false
-            Maui.Theme.colorSet: Maui.Theme.View
-            anchors.fill: parent
-            color: Qt.darker(Maui.Theme.alternateBackgroundColor,1.0)
-            border.width: 0
-            border.color: Qt.lighter("#dadada",1.08)
-            shadow.size: 20
-            shadow.color: Maui.ColorUtils.brightnessForColor(Maui.Theme.backgroundColor) == Maui.ColorUtils.Light ? Qt.darker("#dadada",1.2) : "#2c2c2c"
-            shadow.xOffset: -2
-            shadow.yOffset: -2
-            radius: 6
-            opacity: 0.97
-        }
-    }
-    */
 }
