@@ -122,10 +122,13 @@ Maui.Page {
             color: "transparent"
             clip: true
 
-            ListView {
+            Maui.ListBrowser {
                 id: results
                 anchors.fill: parent
-                anchors.margins: 20
+                anchors.margins: 15
+
+                horizontalScrollBarPolicy: ScrollBar.AsNeeded
+                verticalScrollBarPolicy: ScrollBar.AsNeeded
 
                 spacing: 10
 
